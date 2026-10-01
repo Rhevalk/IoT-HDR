@@ -1,0 +1,132 @@
+from datetime import datetime
+import streamlit as st
+import pandas as pd
+import json
+
+from db.database import get_all_data
+from ui.icons import icon
+
+from streamlit_autorefresh import st_autorefresh
+
+import components
+
+st.set_page_config(page_title="CIN Farm", layout="wide")
+count = st_autorefresh(interval=5000, key="slider_refresh")
+
+#components.navbar()
+
+hide_menu = """
+<style>
+#MainMenu {visibility: hidden;}
+header {visibility: hidden;}
+</style>
+"""
+
+st.markdown(hide_menu, unsafe_allow_html=True)
+
+# =========================
+# LOAD DATA (NO SQL HERE)
+# =========================
+def load_data():
+    rows = get_all_data(200)
+
+    records = []
+
+    for device_id, data, timestamp in rows:
+        try:
+            parsed = json.loads(data)
+
+            records.append({
+                "device": device_id,
+                "temp": parsed.get("temp"),
+                "hum": parsed.get("hum"),
+                "time": timestamp
+            })
+        except:
+            pass
+
+    return pd.DataFrame(records)
+
+
+# Setup
+df = load_data()
+
+if df.empty:
+    st.warning("Belum ada data masuk...")
+    st.stop()
+
+devices = sorted(df["device"].unique())
+
+# =========================
+# UI
+# =========================
+
+images = [
+    "https://placehold.co/800x450/1E2129/white?text=Slide+1",
+    "https://placehold.co/800x450/FF4B4B/white?text=Slide+2",
+    "https://placehold.co/800x450/31333F/white?text=Slide+3"
+]
+current_img = images[count % len(images)]
+
+# 4. Layout 1/3 dan 2/3
+col_left, col_right = st.columns([1.4, 2])
+
+with col_left:
+    with st.container(border=True):
+        components.cardInfoTanaman("Hidroponik")
+
+    target_device = devices[0]
+    device_df = df[df["device"] == target_device]
+    latest_data = device_df.iloc[-1]
+
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        with st.container(border=True):
+            st.markdown(f"""
+            **Temperatur**
+            # {latest_data['temp']} °C
+            """)
+    
+    with col2:
+        with st.container(border=True):
+            st.markdown(f"""
+            **Humidity**
+            # {latest_data['hum']} %
+            """)
+
+    with st.container(border=True):
+        st.line_chart(device_df[["temp", "hum"]], width='stretch')
+
+with col_right:
+    # Menampilkan gambar yang berganti otomatis (Slider)
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        st.image(current_img)
+
+    with col2:
+        with st.container(border=True):
+            st.markdown(f"""
+            ## Kolam Ikan
+            **Suhu Air**
+            # {latest_data['hum']} %
+            """)
+
+
+    # Kolam Ikan
+    col_info1, col_info2 = st.columns(2)
+    with col_info1:
+        with st.container(border=True):
+            components.cardInfoIkan("Kolam Ikan 1")
+    
+    with col_info1:
+        with st.container(border=True):
+            components.cardInfoIkan("Kolam Ikan 2")
+    
+    with col_info2:
+        with st.container(border=True):
+            components.cardInfoIkan("Kolam Ikan 3")
+    
+    with col_info2:
+        with st.container(border=True):
+            components.cardInfoIkan("Kolam Ikan 4")

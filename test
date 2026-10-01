@@ -1,0 +1,24 @@
+#!/bin/bash
+
+while true; do
+  # --- DEVICE 1: ESP-FARM-1 ---
+  temp_farm=$(( 28 + RANDOM % 4 ))  # 28 - 31
+  hum_farm=$(( 68 + RANDOM % 8 ))   # 68 - 75
+
+  payload_farm="{\"temp\": $temp_farm, \"hum\": $hum_farm}"
+  mosquitto_pub -h localhost -t "cinfarm/device/esp-farm-1/data" -m "$payload_farm"
+  echo "Published [esp-farm-1]: $payload_farm"
+
+  # --- DEVICE 2: ESP-IKAN-1 (4 Sensor Suhu Berbeda) ---
+  temp_ikan_1=$(( 25 + RANDOM % 3 )) # 25 - 27 °C (misal: Kolam 1)
+  temp_ikan_2=$(( 26 + RANDOM % 3 )) # 26 - 28 °C (misal: Kolam 2)
+  temp_ikan_3=$(( 27 + RANDOM % 3 )) # 27 - 29 °C (misal: Kolam 3)
+  temp_ikan_4=$(( 26 + RANDOM % 4 )) # 26 - 29 °C (misal: Kolam 4)
+
+  payload_ikan="{\"temp1\": $temp_ikan_1, \"temp2\": $temp_ikan_2, \"temp3\": $temp_ikan_3, \"temp4\": $temp_ikan_4}"
+  mosquitto_pub -h localhost -t "cinfarm/device/esp-ikan-1/data" -m "$payload_ikan"
+  echo "Published [esp-ikan-1]: $payload_ikan"
+
+  echo "----------------------------------------"
+  sleep 5
+done

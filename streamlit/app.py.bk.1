@@ -1,0 +1,114 @@
+from datetime import datetime
+import streamlit as st
+import pandas as pd
+import json
+
+from db.database import get_all_data
+from ui.icons import icon
+
+from streamlit_autorefresh import st_autorefresh
+
+import components
+import config
+
+st.set_page_config(page_title="CIN Farm", layout="wide")
+count = st_autorefresh(interval=5000, key="slider_refresh")
+
+#config.setup()
+
+components.navbar()
+
+
+# =========================
+# LOAD DATA (NO SQL HERE)
+# =========================
+def load_data():
+    rows = get_all_data(200)
+
+    records = []
+
+    for device_id, data, timestamp in rows:
+        try:
+            parsed = json.loads(data)
+
+            records.append({
+                "device": device_id,
+                "temp": parsed.get("temp"),
+                "hum": parsed.get("hum"),
+                "time": timestamp
+            })
+        except:
+            pass
+
+    return pd.DataFrame(records)
+
+
+# Setup
+images = [
+    "https://placehold.co/800x450/1E2129/white?text=Slide+1",
+    "https://placehold.co/800x450/FF4B4B/white?text=Slide+2",
+    "https://placehold.co/800x450/31333F/white?text=Slide+3"
+]
+current_img = images[count % len(images)]
+
+df = load_data()
+if df.empty:
+    st.warning("Belum ada data masuk...")
+    st.stop()
+devices = sorted(df["device"].unique())
+
+# =========================
+# UI
+# =========================
+col_left, col_mid, col_right = st.columns([1.5, 2, 1.5])
+with col_left:
+    with st.container(border=True):
+        components.cardInfoTanaman("Hidroponik")
+
+    target_device = devices[0]
+    device_df = df[df["device"] == target_device]
+    latest_data = device_df.iloc[-1]
+
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        with st.container(border=True):
+            st.markdown("### Temperatur")
+            st.markdown(f"## {latest_data['temp']} °C")
+    
+    with col2:
+        with st.container(border=True):
+            st.markdown("### Humidity")
+            st.markdown(f"## {latest_data['hum']} °C")
+
+    with st.container(border=True):
+        st.line_chart(
+            device_df[["temp", "hum"]],
+            width="stretch",
+            height=410
+        )
+
+with col_mid:
+    with st.container(border=True):
+        components.cardInfoIkan("Kolam Ikan 1")
+    
+    with st.container(border=True):
+        components.cardInfoIkan("Kolam Ikan 2")
+
+    st.image(current_img)
+
+with col_right:
+    # Kolam Ikan
+    with st.container(border=True):
+        components.cardInfoIkan("Kolam Ikan 3")
+    
+    with st.container(border=True):
+        components.cardInfoIkan("Kolam Ikan 4")
+
+    with st.container(border=True):
+        st.line_chart(
+            device_df[["temp", "hum"]],
+            width="stretch",
+            height=355
+        )
+
